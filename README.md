@@ -1,4 +1,9 @@
-# merkle-tree
+<p align="center">
+  <img src="https://www.adjoint.io/images/logo-small.png" width="250"/>
+</p>
+
+merkle-tree
+===========
 
 This library implements a merkle-tree data structure, for representing a list of
 hashed data as a binary tree of pairs of hashes converging to a single hash, the
@@ -75,3 +80,10 @@ example =
     mleaf = mkLeafRootHash "tx2"
     proof = merkleProof mtree mleaf
 ```
+
+License
+-------
+
+Copyright 2017 Adjoint Inc
+
+Released under Apache 2.0.
