@@ -26,10 +26,10 @@ continues until it results in a single hash known as the merkle root.
 
 ```haskell
 -- | Constructs a Merkle Tree from a list of ByteStrings
-mkMerkleTree :: [ByteString] -> MerkleTree ByteString`
+mkMerkleTree :: [ByteString] -> MerkleTree ByteString
 
 -- | Generates the hash of a piece of data existing as a leaf node in the Tree
-mkLeafRootHash :: ByteString -> MerkleRoot ByteString`
+mkLeafRootHash :: ByteString -> MerkleRoot ByteString
 ```
 
 ## Merkle Inclusion Proof
