@@ -24,7 +24,7 @@ module Crypto.Hash.MerkleTree (
   -- ** Size
   mtRootHash,
   mtSize,
-  mtHash,
+  mtHashString,
   mtHeight,
 
   -- ** Testing
@@ -96,9 +96,8 @@ mtRootHash MerkleEmpty      = emptyHash
 mtRootHash (MerkleTree _ x) = mRootHash x
 
 -- | Returns root of merkle tree root hashed.
-mtHash :: MerkleTree a -> ByteString
-mtHash MerkleEmpty      = merkleHash ""
-mtHash (MerkleTree _ x) = B.convert (mRootHash x)
+mtHashString :: MerkleTree a -> ByteString
+mtHashString = B.convert . mtRootHash
 
 mtSize :: MerkleTree a -> Word32
 mtSize MerkleEmpty      = 0
