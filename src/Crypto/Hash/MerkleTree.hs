@@ -22,7 +22,7 @@ module Crypto.Hash.MerkleTree (
   validateMerkleProof,
 
   -- ** Size
-  mtRoot,
+  mtRootHash,
   mtSize,
   mtHash,
   mtHeight,
@@ -64,12 +64,12 @@ data MerkleTree a
 
 data MerkleNode a
   = MerkleBranch {
-      mRoot  :: MerkleHash a
+      mRootHash  :: MerkleHash a
     , mLeft  :: MerkleNode a
     , mRight :: MerkleNode a
   }
   | MerkleLeaf {
-      mRoot :: MerkleHash a
+      mRootHash :: MerkleHash a
     , mVal  :: a
   }
   deriving (Eq, Show, Generic, S.Serialize)
@@ -91,14 +91,14 @@ instance Foldable MerkleNode where
       foldMap f mLeft `mappend` foldMap f mRight
 
 -- | Returns root of merkle tree.
-mtRoot :: MerkleTree a -> MerkleHash a
-mtRoot MerkleEmpty      = emptyHash
-mtRoot (MerkleTree _ x) = mRoot x
+mtRootHash :: MerkleTree a -> MerkleHash a
+mtRootHash MerkleEmpty      = emptyHash
+mtRootHash (MerkleTree _ x) = mRootHash x
 
 -- | Returns root of merkle tree root hashed.
 mtHash :: MerkleTree a -> ByteString
 mtHash MerkleEmpty      = merkleHash ""
-mtHash (MerkleTree _ x) = B.convert (mRoot x)
+mtHash (MerkleTree _ x) = B.convert (mRootHash x)
 
 mtSize :: MerkleTree a -> Word32
 mtSize MerkleEmpty      = 0
@@ -137,7 +137,7 @@ mkLeaf :: ByteString -> MerkleNode ByteString
 mkLeaf a =
   MerkleLeaf
   { mVal  = a
-  , mRoot = mkLeafRootHash a
+  , mRootHash = mkLeafRootHash a
   }
 
 mkLeafRootHash :: B.ByteArrayAccess a => a -> MerkleHash a
@@ -148,7 +148,7 @@ mkBranch a b =
   MerkleBranch
   { mLeft  = a
   , mRight = b
-  , mRoot  = mkRootHash (mRoot a) (mRoot b)
+  , mRootHash  = mkRootHash (mRootHash a) (mRootHash b)
   }
 
 mkRootHash :: MerkleHash a -> MerkleHash a -> MerkleHash a
@@ -200,8 +200,8 @@ merkleProof (MerkleTree _ rootNode) leafRoot = MerkleProof $ constructPath [] ro
       | otherwise             = []
     constructPath pElems (MerkleBranch bRoot ln rn) = lPath ++ rPath
       where
-        lProofElem = ProofElem (mRoot ln) (mRoot rn) L
-        rProofElem = ProofElem (mRoot rn) (mRoot ln) R
+        lProofElem = ProofElem (mRootHash ln) (mRootHash rn) L
+        rProofElem = ProofElem (mRootHash rn) (mRootHash ln) R
 
         lPath = constructPath (lProofElem:pElems) ln
         rPath = constructPath (rProofElem:pElems) rn
@@ -256,4 +256,4 @@ testMerkleProofN n
       let mtree = mkMerkleTree $ map show [1..n]
           randLeaf = mkLeafRootHash $ show randN
           proof = merkleProof mtree randLeaf
-      return $ validateMerkleProof proof (mtRoot mtree) randLeaf
+      return $ validateMerkleProof proof (mtRootHash mtree) randLeaf
