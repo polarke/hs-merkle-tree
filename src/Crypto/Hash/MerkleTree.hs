@@ -108,10 +108,7 @@ emptyHash = MerkleHash (merkleHash mempty)
 
 -- | Merkle tree height
 mtHeight :: Int -> Int
-mtHeight ntx
-  | ntx < 2 = 0
-  | even ntx  = 1 + mtHeight (ntx `div` 2)
-  | otherwise = mtHeight $ ntx + 1
+mtHeight ntx = binaryLength (ntx - 1)
 
 -- | Merkle tree width
 mtWidth
@@ -127,6 +124,12 @@ powerOfTwo n
    | otherwise = go n
  where
     go w = if w .&. (w - 1) == 0 then w else go (w .&. (w - 1))
+
+-- | Return the binary length of positive number, return 0 otherwise.
+binaryLength :: (Bits a, Num a, Ord a) => a -> a
+binaryLength n
+  | n <= 0 = 0
+  | otherwise = 1 + binaryLength (n `shiftR` 1)
 
 -------------------------------------------------------------------------------
 -- Constructors
