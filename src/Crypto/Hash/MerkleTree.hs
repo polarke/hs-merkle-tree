@@ -135,7 +135,7 @@ binaryLength n
 -- Constructors
 -------------------------------------------------------------------------------
 
-mkLeaf :: ByteString -> MerkleNode ByteString
+mkLeaf :: B.ByteArrayAccess a => a -> MerkleNode a
 mkLeaf a =
   MerkleLeaf
   { mVal  = a
