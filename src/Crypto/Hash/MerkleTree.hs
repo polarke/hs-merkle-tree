@@ -7,7 +7,7 @@
 
 module Crypto.Hash.MerkleTree (
   MerkleTree(..),
-  MerkleRoot(..),
+  MerkleHash(..),
   MerkleNode(..),
 
   -- ** Constructors
@@ -48,13 +48,13 @@ import System.Random (randomRIO)
 -------------------------------------------------------------------------------
 
 -- | A merkle tree root.
-newtype MerkleRoot a = MerkleRoot
-  { getMerkleRoot :: ByteString
+newtype MerkleHash a = MerkleHash
+  { getMerkleHash :: ByteString
   } deriving (Show, Eq, Ord,  Generic, S.Serialize)
 
-instance B.ByteArrayAccess (MerkleRoot a) where
-  length (MerkleRoot bs) = B.length bs
-  withByteArray (MerkleRoot bs) f = B.withByteArray bs f
+instance B.ByteArrayAccess (MerkleHash a) where
+  length (MerkleHash bs) = B.length bs
+  withByteArray (MerkleHash bs) f = B.withByteArray bs f
 
 -- | A merkle tree.
 data MerkleTree a
@@ -64,12 +64,12 @@ data MerkleTree a
 
 data MerkleNode a
   = MerkleBranch {
-      mRoot  :: MerkleRoot a
+      mRoot  :: MerkleHash a
     , mLeft  :: MerkleNode a
     , mRight :: MerkleNode a
   }
   | MerkleLeaf {
-      mRoot :: MerkleRoot a
+      mRoot :: MerkleHash a
     , mVal  :: a
   }
   deriving (Eq, Show, Generic, S.Serialize)
@@ -91,7 +91,7 @@ instance Foldable MerkleNode where
       foldMap f mLeft `mappend` foldMap f mRight
 
 -- | Returns root of merkle tree.
-mtRoot :: MerkleTree a -> MerkleRoot a
+mtRoot :: MerkleTree a -> MerkleHash a
 mtRoot MerkleEmpty      = emptyHash
 mtRoot (MerkleTree _ x) = mRoot x
 
@@ -104,8 +104,8 @@ mtSize :: MerkleTree a -> Word32
 mtSize MerkleEmpty      = 0
 mtSize (MerkleTree s _) = s
 
-emptyHash :: MerkleRoot a
-emptyHash = MerkleRoot (merkleHash mempty)
+emptyHash :: MerkleHash a
+emptyHash = MerkleHash (merkleHash mempty)
 
 -- | Merkle tree height
 mtHeight :: Int -> Int
@@ -140,8 +140,8 @@ mkLeaf a =
   , mRoot = mkLeafRootHash a
   }
 
-mkLeafRootHash :: B.ByteArrayAccess a => a -> MerkleRoot a
-mkLeafRootHash a = MerkleRoot $ merkleHash (BS.singleton 0 <> B.convert a)
+mkLeafRootHash :: B.ByteArrayAccess a => a -> MerkleHash a
+mkLeafRootHash a = MerkleHash $ merkleHash (BS.singleton 0 <> B.convert a)
 
 mkBranch :: MerkleNode a -> MerkleNode a -> MerkleNode a
 mkBranch a b =
@@ -151,8 +151,8 @@ mkBranch a b =
   , mRoot  = mkRootHash (mRoot a) (mRoot b)
   }
 
-mkRootHash :: MerkleRoot a -> MerkleRoot a -> MerkleRoot a
-mkRootHash (MerkleRoot l) (MerkleRoot r) = MerkleRoot $ merkleHash $ mconcat
+mkRootHash :: MerkleHash a -> MerkleHash a -> MerkleHash a
+mkRootHash (MerkleHash l) (MerkleHash r) = MerkleHash $ merkleHash $ mconcat
   [ BS.singleton 1, B.convert l, B.convert r ]
 
 -- | Smart constructor for 'MerkleTree'.
@@ -175,8 +175,8 @@ newtype MerkleProof a = MerkleProof { getMerkleProof :: [ProofElem a] }
   deriving (Show, Eq, Ord, Generic, S.Serialize)
 
 data ProofElem a = ProofElem
-  { nodeRoot    :: MerkleRoot a
-  , siblingRoot :: MerkleRoot a
+  { nodeRoot    :: MerkleHash a
+  , siblingRoot :: MerkleHash a
   , nodeSide    :: Side
   } deriving (Show, Eq, Ord, Generic, S.Serialize)
 
@@ -190,7 +190,7 @@ data Side = L | R
 -- the order in which to hash each proof element root and it's sibling root).
 -- The list is ordered such that the for each element, the next element in
 -- the list is the proof element corresponding to the node's parent node.
-merkleProof :: forall a. MerkleTree a -> MerkleRoot a -> MerkleProof a
+merkleProof :: forall a. MerkleTree a -> MerkleHash a -> MerkleProof a
 merkleProof MerkleEmpty _ = MerkleProof []
 merkleProof (MerkleTree _ rootNode) leafRoot = MerkleProof $ constructPath [] rootNode
   where
@@ -207,17 +207,17 @@ merkleProof (MerkleTree _ rootNode) leafRoot = MerkleProof $ constructPath [] ro
         rPath = constructPath (rProofElem:pElems) rn
 
 -- | Validate a merkle tree proof of inclusion
-validateMerkleProof :: forall a. MerkleProof a ->  MerkleRoot a -> MerkleRoot a -> Bool
+validateMerkleProof :: forall a. MerkleProof a ->  MerkleHash a -> MerkleHash a -> Bool
 validateMerkleProof (MerkleProof proofElems) treeRoot leafRoot =
     validate proofElems leafRoot
   where
-    validate :: [ProofElem a] -> MerkleRoot a -> Bool
+    validate :: [ProofElem a] -> MerkleHash a -> Bool
     validate [] proofRoot = proofRoot == treeRoot
     validate (pElem:pElems) proofRoot
       | proofRoot /= nodeRoot pElem = False
       | otherwise = validate pElems $ hashProofElem pElem
 
-    hashProofElem :: ProofElem a -> MerkleRoot a
+    hashProofElem :: ProofElem a -> MerkleHash a
     hashProofElem (ProofElem pRoot sibRoot side) =
       case side of
         L -> mkRootHash pRoot sibRoot
